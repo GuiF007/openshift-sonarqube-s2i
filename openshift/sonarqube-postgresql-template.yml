@@ -33,6 +33,8 @@ objects:
     labels:
       app: sonarqube
   spec:
+    tls:
+      termination: edge
     to:
       kind: Service
       name: sonarqube
@@ -49,14 +51,7 @@ objects:
       app: sonarqube
       deploymentconfig: sonarqube
     strategy:
-      resources: {}
-      rollingParams:
-        intervalSeconds: 1
-        maxSurge: 25%
-        maxUnavailable: 25%
-        timeoutSeconds: 600
-        updatePeriodSeconds: 1
-      type: Rolling
+      type: Recreate
     template:
       metadata:
         annotations:
@@ -68,12 +63,12 @@ objects:
       spec:
         containers:
         - env:
-          - name: SONARQUBE_JDBC_PASSWORD
-            value: ${POSTGRESQL_PASSWORD}
           - name: SONARQUBE_JDBC_URL
             value: jdbc:postgresql://postgresql-sonarqube/sonar
           - name: SONARQUBE_JDBC_USERNAME
             value: sonar
+          - name: SONARQUBE_JDBC_PASSWORD
+            value: ${POSTGRESQL_PASSWORD}
           image: ' '
           imagePullPolicy: IfNotPresent
           name: sonarqube
@@ -100,8 +95,8 @@ objects:
             timeoutSeconds: 5
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 200m
+              memory: 1Gi
             limits:
               cpu: 1
               memory: 2Gi
@@ -109,6 +104,12 @@ objects:
           volumeMounts:
           - mountPath: /opt/sonarqube/data
             name: sonarqube-data
+          - mountPath: /opt/sonarqube/extensions
+            name: sonarqube-extensions
+          - mountPath: /opt/sonarqube/logs
+            name: sonarqube-logs
+          - mountPath: /opt/sonarqube/temp
+            name: sonarqube-temp
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         securityContext: {}
@@ -117,6 +118,15 @@ objects:
         - name: sonarqube-data
           persistentVolumeClaim:
             claimName: sonarqube-data
+        - name: sonarqube-extensions
+          persistentVolumeClaim:
+            claimName: sonarqube-extensions
+        - name: sonarqube-logs
+          persistentVolumeClaim:
+            claimName: sonarqube-logs
+        - name: sonarqube-temp
+          persistentVolumeClaim:
+            claimName: sonarqube-temp
     triggers:
     - type: ConfigChange
     - imageChangeParams:
@@ -234,6 +244,8 @@ objects:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
+    annotations:
+      volume.beta.kubernetes.io/storage-provisioner: nfs-storage
     name: postgresql-sonarqube-data
   spec:
     accessModes:
@@ -241,9 +253,12 @@ objects:
     resources:
       requests:
         storage: ${POSTGRESQL_VOLUME_CAPACITY}
+    storageClassName: managed-nfs-storage
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
+    annotations:
+      volume.beta.kubernetes.io/storage-provisioner: nfs-storage
     name: sonarqube-data
   spec:
     accessModes:
@@ -251,9 +266,49 @@ objects:
     resources:
       requests:
         storage: ${SONAR_VOLUME_CAPACITY}
+    storageClassName: managed-nfs-storage
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    annotations:
+      volume.beta.kubernetes.io/storage-provisioner: nfs-storage
+    name: sonarqube-extensions
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${SONAR_EXTENSION_VOLUME_CAPACITY}
+    storageClassName: managed-nfs-storage
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    annotations:
+      volume.beta.kubernetes.io/storage-provisioner: nfs-storage
+    name: sonarqube-logs
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${SONAR_LOG_VOLUME_CAPACITY}
+    storageClassName: managed-nfs-storage
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    annotations:
+      volume.beta.kubernetes.io/storage-provisioner: nfs-storage
+    name: sonarqube-temp
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${SONAR_TEMP_VOLUME_CAPACITY}
+    storageClassName: managed-nfs-storage
 parameters:
 - displayName: SonarQube version
-  value: "6.7"
+  value: "7.7"
   name: SONARQUBE_VERSION
   required: true
 - description: Password for SonarQube Server PostgreSQL backend
@@ -267,8 +322,23 @@ parameters:
   name: POSTGRESQL_VOLUME_CAPACITY
   required: true
   value: 1Gi
-- description: Volume space available for SonarQube
-  displayName: SonarQube Volume Capacity
+- description: Volume space available for SonarQube Data
+  displayName: SonarQube Data Volume Capacity
   name: SONAR_VOLUME_CAPACITY
+  required: true
+  value: 1Gi
+- description: Volume space available for SonarQube Extensions / plugins
+  displayName: SonarQube Extension Volume Capacity
+  name: SONAR_EXTENSION_VOLUME_CAPACITY
+  required: true
+  value: 1Gi
+- description: Volume space available for SonarQube Logs
+  displayName: SonarQube Log Volume Capacity
+  name: SONAR_LOG_VOLUME_CAPACITY
+  required: true
+  value: 1Gi
+- description: Volume space available for SonarQube Temp space
+  displayName: SonarQube Temp Space Volume Capacity
+  name: SONAR_TEMP_VOLUME_CAPACITY
   required: true
   value: 1Gi
