@@ -2,6 +2,8 @@ FROM sonarqube:7.7-community
 
 USER root 
 
+COPY bin/run.sh $SONARQUBE_HOME/bin/
+
 RUN /bin/bash -c 'chown -R sonarqube:0 $SONARQUBE_HOME && \
     chmod -R g+rw $SONARQUBE_HOME && \
     find $SONARQUBE_HOME -type d -exec chmod g+x {} + && \
