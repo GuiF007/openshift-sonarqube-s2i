@@ -4,8 +4,8 @@ USER root
 
 COPY bin/run.sh $SONARQUBE_HOME/bin/
 
-RUN echo 'vm.max_map_count=262144' >> /etc/sysctl.conf
-CMD ["sysctl", "-p"]
+#RUN echo 'vm.max_map_count=262144' >> /etc/sysctl.conf
+#CMD ["sysctl", "-p"]
 
 RUN /bin/bash -c 'chown -R sonarqube:0 $SONARQUBE_HOME && \
     chmod -R g+rw $SONARQUBE_HOME && \
