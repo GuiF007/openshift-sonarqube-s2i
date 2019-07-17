@@ -39,6 +39,40 @@ objects:
       kind: Service
       name: sonarqube
 - apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: sonarqube-ocp
+    name: sonarqube-ocp
+  spec:
+    lookupPolicy:
+      local: true
+
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: sonarqube-ocp
+    name: sonarqube-ocp
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "$sonarqube-ocp:${VERSION}"
+    source:
+      git:
+        uri: https://github.com/GuiF007/openshift-sonarqube-s2i.git
+        ref: testCOPYRunSH
+        httpProxy: ""
+        httpsProxy: ""
+      contextDir: .
+      type: Git
+    strategy:
+      dockerStrategy: {}
+      type: Docker
+    triggers:
+    - type: ConfigChange
+- apiVersion: v1
   kind: DeploymentConfig
   metadata:
     labels:
