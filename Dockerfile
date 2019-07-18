@@ -44,4 +44,9 @@ RUN /usr/bin/fix-permissions $SONARQUBE_HOME \
     && chmod 775 $SONARQUBE_HOME/bin/run.sh
 
 USER sonar
+
+# If you need proxy... Otherwise delete... Unelegant way, but it works...
+RUN echo "http.proxyHost=s9l2074.gie.intra" >> /opt/sonarqube/conf/sonar.properties
+RUN echo "http.proxyPort=3128"  >> /opt/sonarqube/conf/sonar.properties
+
 ENTRYPOINT ["./bin/run.sh"]
