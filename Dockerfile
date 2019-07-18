@@ -37,7 +37,7 @@ RUN set -x \
 
 
 WORKDIR $SONARQUBE_HOME
-COPY bin/run.sh $SONARQUBE_HOME/bin/
+COPY run.sh $SONARQUBE_HOME/bin/
 
 RUN useradd -r sonar
 RUN /usr/bin/fix-permissions $SONARQUBE_HOME \
